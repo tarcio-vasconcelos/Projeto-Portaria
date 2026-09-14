@@ -1,9 +1,11 @@
 from pypdf import PdfReader
+import utils
 
-read = PdfReader("Finalizados/Não Assinados/SEI_GOVPE - 85122747 - UPE - Portaria Reitor - DESIGNAR.pdf")
-texto = ""
-
-path = read.pages[0]
-texto = path.extract_text()
-
-print(texto)
+def iniciar():
+    trig = utils.buscar_pdfs()
+    if not trig:
+        print("A lista está vazia!")
+    else:
+        ...
+        #print(trig)
+iniciar()

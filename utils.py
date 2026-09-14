@@ -1,36 +1,85 @@
-import os, shutil
+from pathlib import Path
 from pypdf import PdfReader
+from docxtpl import DocxTemplate, RichText
+import shutil
 
-def buscar_assinatura(pypdf, os, shutil):
-    caminho = "./Arquivos/"
-    lista = ler_pdfs(caminho, os)
 
-    quant_arquivos = range(len(lista))
-    for i in quant_arquivos:
-        texto = ""
-        caminho += lista[i]
-        reader = PdfReader(caminho)
-        for page in range(len(reader.pages)):
-            texto += reader.pages[page].extract_text()
+def buscar_pdfs():
+    caminho = Path("Novos")
+    arquivos = puxar_lista(caminho)
+    
+    mapa = {
+    "aplicar_penalidade": "",
+    "autorizar_o_afastamento": "",
+    "conceder_a_gratificação_de_risco_em_regime_de_plantão": "",
+    "conceder_a_permanência_no_regime_de_trabalho_de_dedicação_exclusiva": "",
+    "conceder_gratificação_de_dedicação_exclusiva": "",
+    "conceder_gratificação_de_incentivo_à_titulação_docente": "",
+    "concender_gratificação_de_risco_vida": "",
+    "conceder_licença_sem_vencimentos": "",
+    "declarar_vacância": "",
+    "designar_substituir": "",
+    "designar": "",
+    "dispensar": "",
+    "distribuir_carga_horária": "",
+    "e r r a t a": "",
+    "exonerar": "",
+    "extrato_de_contrato": "",
+    "homologar": "",
+    "instaurar_comissão": "",
+    "interromper": "",
+    "migração_de_regime_de_trabalho_de_dedicação_exclusiva": "",
+    "nomear": "",
+    "progredir_por_elevação_de_nível_profissional": "",
+    "promover": "",
+    "reconhecer_direito_à_licença_prêmio": "",
+    "reconhecer_o_direito_ao_abono_de_permanência": "",
+    "remanejar": "",
+    "remover": "",
+    "rescindir": "",
+    "suspender": "",
+    "tornar_sem_efeito": "",
+    "prorrogar": "",
+    "retificar": "",
+    "retornar_do_afastamento": "",
+    }
+    
+    if not arquivos:
+        return arquivos
+    
+    for arquivo in arquivos:
+        texto = extrair_texto(arquivo)
         if "Documento assinado eletronicamente" in texto:
-            destino = "./Finalizados/Assinados"
-            shutil.move(caminho, destino)
-            caminho = "./Arquivos/"
-        else:
-            destino = "./Finalizados/Não Assinados"
-            shutil.move(caminho, destino)
-            caminho = "./Arquivos/"
+            mapa = classificar(texto, mapa)
+            
+    preencher_texto(mapa)
+    return mapa
 
-def ler_pdfs(arquivo ,os):
-    lista = os.listdir(arquivo)
-    return lista
+def puxar_lista(caminho): 
+    pdfs = list(caminho.glob("*.pdf"))
+    return pdfs
 
-def agrupar_pdfs(os, PDF):
-    caminho = "./Finalizados/Assinados"
-    lista = ler_pdfs(caminho ,os)
-    print(lista)
+def extrair_texto(caminho):
+    reader = PdfReader(caminho)
+    texto = ""
+    paginas = reader.pages
+    for pagina in paginas:
+        texto_bruto = pagina.extract_text() or ""
+        texto += texto_bruto
+    return texto
 
+def classificar(texto, mapa):
+    texto_lista = texto.split("R  E  I  T  O  R A")
+    for item in mapa:
+        item_interavel = item.replace("_", " ")
+        if item_interavel.lower() in texto_lista[0].lower():
+            rt = RichText()
+            rt.add(texto_lista[0])
+            mapa[item] = rt
+            return mapa
+    return mapa
 
-
-
-agrupar_pdfs(os, PdfReader)
+def preencher_texto(mapa):
+    doc = DocxTemplate("Template/BOLETIM OFICIAL - MODELO EM BRANCO.docx")
+    doc.render(mapa)
+    doc.save("Finalizar/BOLETIM.docx")
